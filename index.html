@@ -123,6 +123,9 @@
   .masa-kart .mn { font-size: 1.5rem; font-weight: 900; color: var(--accent2); line-height: 1; }
   .masa-kart .ml { font-size: 0.62rem; color: var(--muted); font-weight: 600; }
   .masa-kart .mt { font-size: 0.68rem; color: var(--success); font-weight: 800; }
+  .masa-kart .mnot { font-size: 0.58rem; color: var(--text2); font-weight: 700; max-width: 72px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center; }
+  .masa-not-btn { position: absolute; bottom: 4px; right: 4px; background: none; border: none; font-size: 0.7rem; color: var(--muted); cursor: pointer; padding: 2px; opacity: 0; transition: opacity 0.15s; }
+  .masa-kart:hover .masa-not-btn { opacity: 1; }
   .masa-kart .mb {
     position: absolute; top: 5px; right: 5px;
     background: var(--accent); color: var(--bg);
@@ -692,6 +695,18 @@
   </div>
 </div>
 
+<!-- NOT MODAL -->
+<div class="modal-overlay" id="not-modal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-baslik" id="not-modal-baslik">Masa Not</div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">Kısa bir not yazın (maks. 20 karakter)</p>
+    <input type="text" id="not-input" maxlength="20" placeholder="örn: pencere kenarı, sigara..."
+      style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:600;outline:none;margin-bottom:12px;">
+    <button id="not-modal-kaydet" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;margin-bottom:8px;">✓ Kaydet</button>
+    <button onclick="modalKapat('not-modal')" style="width:100%;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;">İptal</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -733,7 +748,7 @@ let URUNLER = {
   ],
 };
 
-const masalar = Array.from({length:20}, (_,i) => ({id:i+1, siparisler:[]}));
+const masalar = Array.from({length:20}, (_,i) => ({id:i+1, siparisler:[], not:''}));
 let seciliMasa = null;
 let mevcutKat = Object.keys(URUNLER)[0];
 let gunlukSatis = {};
@@ -767,10 +782,15 @@ function masalarRender() {
     btn.className = 'masa-kart' + (seciliMasa===m.id?' secili':'') + (var_?' dolu':'');
     btn.innerHTML = `
       <div class="mn">${m.id}</div>
-      <div class="ml">Masa</div>
+      ${m.not ? `<div class="mnot">${m.not}</div>` : '<div class="ml">Masa</div>'}
       ${var_?`<div class="mt">${fmt(toplam)}</div>`:''}
       ${var_?`<div class="mb">${m.siparisler.reduce((s,o)=>s+o.adet,0)}</div>`:''}
+      <button class="masa-not-btn" title="Not ekle">✏️</button>
     `;
+    btn.querySelector('.masa-not-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      masaNotDuzenle(m.id);
+    });
     btn.onclick = () => {
       seciliMasa = m.id;
       masalarRender();
@@ -784,6 +804,20 @@ function masalarRender() {
 }
 
 function masaToplam(m) { return m.siparisler.reduce((s,o)=>s+o.fiyat*o.adet,0); }
+
+// Masa not modal
+function masaNotDuzenle(id) {
+  const m = masalar[id-1];
+  document.getElementById('not-modal-baslik').textContent = 'Masa ' + id + ' — Not';
+  document.getElementById('not-input').value = m.not || '';
+  document.getElementById('not-modal-kaydet').onclick = () => {
+    masalar[id-1].not = document.getElementById('not-input').value.trim().substring(0, 20);
+    modalKapat('not-modal');
+    masalarRender();
+  };
+  modalAc('not-modal');
+  setTimeout(() => document.getElementById('not-input').focus(), 200);
+}
 
 // ─── ADİSYON ───
 function adisyonGuncelle() {
@@ -1443,6 +1477,9 @@ function toast(msg) {
 masalarRender();
 katSelectDoldur();
 urunListesiRender();
+document.getElementById('not-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('not-modal-kaydet').click();
+});
 </script>
 </body>
 </html>
